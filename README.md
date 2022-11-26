@@ -1,2 +1,1 @@
-# spark-snippets
-My Apache Spark code snippets
+# Apache Spark code snippets
