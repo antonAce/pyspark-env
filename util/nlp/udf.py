@@ -1,5 +1,7 @@
 import re
 
+from .stopwords import STOP_WORDS
+
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType, StringType
 
@@ -27,6 +29,10 @@ def sub_punc(text: str, sub_token=' ') -> str:
 def sub_numwords(text: str, sub_token='') -> str:
     # Substitute words that contain digits
     return re.sub(r'\b(\w)*(\d)(\w)*\b', sub_token, text)
+
+def sub_stopwords(text: str, sub_token='') -> str:
+    # Substitute english stopwords with a custom token 
+    return ' '.join([word if word not in STOP_WORDS else sub_token for word in text.split(" ")])
 
 def sub_space(text: str, sub_token=' ') -> str:
     # Remove redundant spaces between each word
@@ -61,6 +67,7 @@ def full_proc(text: str) -> str:
         lambda text: sub_sepr(text),
         lambda text: sub_punc(text),
         lambda text: sub_numwords(text),
+        lambda text: sub_stopwords(text),
         lambda text: sub_space(text),
         lambda text: text.strip()
     ])
@@ -75,6 +82,7 @@ sub_unicode_udf = udf(lambda text: sub_unicode(text), StringType())
 sub_sepr_udf = udf(lambda text: sub_sepr(text), StringType())
 sub_punc_udf = udf(lambda text: sub_punc(text), StringType())
 sub_numwords_udf = udf(lambda text: sub_numwords(text), StringType())
+sub_stopwords_udf = udf(lambda text: sub_stopwords(text), StringType())
 sub_space_udf = udf(lambda text: sub_space(text), StringType())
 
 # Metrics UDFs
