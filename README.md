@@ -1,1 +1,1 @@
-# Apache Spark code snippets
+# Environment setup for Apache Spark project
