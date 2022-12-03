@@ -26,6 +26,10 @@ def sub_punc(text: str, sub_token=' ') -> str:
     # Substitute punctuation
     return re.sub(r'[!"#$%&\(\)\*\+,\./:;<=>?@\\^_`{|}~\[\]-]+', sub_token, text)
 
+def sub_url(text: str, sub_token='<URL>') -> str:
+    # Substitute web resource link (URL) with a custom token
+    return re.sub(r'^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$', sub_token, text)
+
 def sub_numwords(text: str, sub_token='') -> str:
     # Substitute words that contain digits
     return re.sub(r'\b(\w)*(\d)(\w)*\b', sub_token, text)
@@ -49,6 +53,7 @@ def social_proc(text: str) -> str:
     # Preprocess text from a social media
     return iter_proc(text, steps=[
         lambda text: text.lower(),
+        lambda text: sub_url(text),
         lambda text: sub_usertags(text),
         lambda text: sub_hashtags(text),
         lambda text: sub_sepr(text),
@@ -61,6 +66,7 @@ def full_proc(text: str) -> str:
     # Preprocess text with all available pipelines
     return iter_proc(text, steps=[
         lambda text: text.lower(),
+        lambda text: sub_url(text),
         lambda text: sub_usertags(text),
         lambda text: sub_hashtags(text),
         lambda text: sub_unicode(text),
@@ -76,6 +82,7 @@ def full_proc(text: str) -> str:
 # Preprocessing UDFs
 strip_udf = udf(lambda text: text.strip(), StringType())
 normalise_udf = udf(lambda text: text.lower(), StringType())
+sub_url_udf = udf(lambda text: sub_url(text), StringType())
 sub_usertags_udf = udf(lambda text: sub_usertags(text), StringType())
 sub_hashtags_udf = udf(lambda text: sub_hashtags(text), StringType())
 sub_unicode_udf = udf(lambda text: sub_unicode(text), StringType())
