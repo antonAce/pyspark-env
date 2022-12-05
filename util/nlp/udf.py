@@ -1,9 +1,11 @@
 import re
 
+from math import sqrt
+from typing import List
 from .stopwords import STOP_WORDS
 
 from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType, StringType
+from pyspark.sql.types import IntegerType, StringType, FloatType
 
 
 def sub_usertags(text: str, sub_token="<USER>") -> str:
@@ -78,6 +80,21 @@ def full_proc(text: str) -> str:
         lambda text: text.strip()
     ])
 
+def cosine_sim(x: List[float], y: List[float]) -> List[float]:
+    """Compute a cosine similarity between `x` and `y` vectors: `cos(x, y) = x @ y / (||x|| * ||y||)`
+
+    Args:
+        x (List[float]): An input one-dimensional vector.
+        y (List[float]): Another input one-dimensional vector.
+
+    Returns:
+        List[float]: Cosine similarity vector.
+    """
+
+    return (sum([xi * yi for xi, yi in zip(x, y)])) / (
+        sqrt(sum([xi ** 2 for xi in x])) *
+        sqrt(sum([yi ** 2 for yi in y]))
+    )
 
 # Preprocessing UDFs
 strip_udf = udf(lambda text: text.strip(), StringType())
@@ -93,6 +110,7 @@ sub_stopwords_udf = udf(lambda text: sub_stopwords(text), StringType())
 sub_space_udf = udf(lambda text: sub_space(text), StringType())
 
 # Metrics UDFs
+cosine_sim_udf = udf(lambda x, y: cosine_sim(x, y), FloatType())
 wordlen_udf = udf(lambda text: len(text.split(' ')), IntegerType())
 charlen_udf = udf(lambda text: len(text), IntegerType())
 
