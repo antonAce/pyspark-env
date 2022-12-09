@@ -2,5 +2,7 @@ name: spark-env
 channels:
   - defaults
 dependencies:
-  - pyspark=3.1.2
+  - pyspark>=3.1.2
+  - numpy>=1.20.3
+  - pandas>=1.5.2
   - python=3.10.8

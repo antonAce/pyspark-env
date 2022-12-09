@@ -1,11 +1,11 @@
 import re
+import numpy as np
 
-from math import sqrt
-from typing import List
-from .stopwords import STOP_WORDS
-
+from numpy.linalg import norm
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType, StringType, FloatType
+
+from .stopwords import STOP_WORDS
 
 
 def sub_usertags(text: str, sub_token="<USER>") -> str:
@@ -80,21 +80,18 @@ def full_proc(text: str) -> str:
         lambda text: text.strip()
     ])
 
-def cosine_sim(x: List[float], y: List[float]) -> List[float]:
+def cosine_sim(x: np.array, y: np.array) -> np.array:
     """Compute a cosine similarity between `x` and `y` vectors: `cos(x, y) = x @ y / (||x|| * ||y||)`
 
     Args:
-        x (List[float]): An input one-dimensional vector.
-        y (List[float]): Another input one-dimensional vector.
+        x (np.array): An input vector.
+        y (np.array): Another input vector.
 
     Returns:
-        List[float]: Cosine similarity vector.
+        np.array: Cosine similarity vector.
     """
 
-    return (sum([xi * yi for xi, yi in zip(x, y)])) / (
-        sqrt(sum([xi ** 2 for xi in x])) *
-        sqrt(sum([yi ** 2 for yi in y]))
-    )
+    return x @ y / (norm(x) * norm(y))
 
 # Preprocessing UDFs
 strip_udf = udf(lambda text: text.strip(), StringType())
