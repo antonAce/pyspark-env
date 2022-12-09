@@ -1,7 +1,7 @@
 import re
 import numpy as np
+import numpy.linalg as la
 
-from numpy.linalg import norm
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType, StringType, FloatType
 
@@ -9,50 +9,149 @@ from .stopwords import STOP_WORDS
 
 
 def sub_usertags(text: str, sub_token="<USER>") -> str:
-    # Substitute usernames (starts with '@' symbol) with a custom token
+    """Substitute usernames (starts with '@' symbol) with a custom token.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute for a username. Defaults to "<USER>".
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'@[\S]+', sub_token, text)
 
 def sub_hashtags(text: str, sub_token=None) -> str:
-    # Substitute #hashtags with a custom token (if None, substitute with the inner word)
+    """Substitute hashtags (starts with '#' symbol) with a custom token.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute for a hashtag. If None, then function substitutes hashtag with the corresponding word. Defaults to None.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'(#)([\S]+)', sub_token if sub_token is not None else r'\2', text)
 
 def sub_unicode(text: str, sub_token=' ') -> str:
-    # Substitute Unicode symbols
+    """Substitute Unicode symbols.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to ' '.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'[^\u0000-\u007F]+', sub_token, text)
 
 def sub_sepr(text: str, sub_token=' ') -> str:
-    # Substitute common line separation symbols (\n, \r, \t)
+    """Substitute common line separation symbols (`\\n`, `\\r`, `\\t`).
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to ' '.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'[\n\r\t]+', sub_token, text)
 
 def sub_punc(text: str, sub_token=' ') -> str:
-    # Substitute punctuation
+    """Substitute punctuation symbols:
+    ```['!', '"', '#', '$', '%', '&', '(', ')', '*', '+', ',', '.', '/', ':', ';', '<', '=', '>', '?', '@', '\\', '^', '_', '`', '{', '|', '}', '~', '[', ']', '-']```
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to ' '.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'[!"#$%&\(\)\*\+,\./:;<=>?@\\^_`{|}~\[\]-]+', sub_token, text)
 
 def sub_url(text: str, sub_token='<URL>') -> str:
-    # Substitute web resource link (URL) with a custom token
+    """Substitute web resource link (URL) with a custom token.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to '<URL>'.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$', sub_token, text)
 
 def sub_numwords(text: str, sub_token='') -> str:
-    # Substitute words that contain digits
+    """Substitute words that contain digits.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to ''.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'\b(\w)*(\d)(\w)*\b', sub_token, text)
 
 def sub_stopwords(text: str, sub_token='') -> str:
-    # Substitute english stopwords with a custom token 
+    """Substitute English stopwords.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): A custom token to substitute. Defaults to ''.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return ' '.join([word if word not in STOP_WORDS else sub_token for word in text.split(" ")])
 
 def sub_space(text: str, sub_token=' ') -> str:
-    # Remove redundant spaces between each word
+    """Substitute 2+ adjacent space characters with a single space character.
+
+    Args:
+        text (str): Input text string to process.
+        sub_token (str, optional): An alternative to a single space character. Defaults to ' '.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return re.sub(r'[ ]+', sub_token, text)
 
 def iter_proc(text: str, steps=[]) -> str:
-    # Iterative preprocessing of a text data
+    """Iterative preprocessing of a text data.
+
+    Args:
+        text (str): Input text string to process.
+        steps (list, optional): User defined processing steps of a `Callable` type. Defaults to [].
+
+    Returns:
+        str: Processed input string.
+    """
+
     for step in steps:
         text = step(text)
 
     return text
 
 def social_proc(text: str) -> str:
-    # Preprocess text from a social media
+    """Preprocess text string related to a social media (e.g. a blog post): normalize and remove URLs, usernames, hashtags, separation symbols, words with numbers, and redundant spaces.
+
+    Args:
+        text (str): Input text string to process.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return iter_proc(text, steps=[
         lambda text: text.lower(),
         lambda text: sub_url(text),
@@ -65,7 +164,15 @@ def social_proc(text: str) -> str:
     ])
 
 def full_proc(text: str) -> str:
-    # Preprocess text with all available pipelines
+    """Preprocess text with all available pipelines.
+
+    Args:
+        text (str): Input text string to process.
+
+    Returns:
+        str: Processed input string.
+    """
+
     return iter_proc(text, steps=[
         lambda text: text.lower(),
         lambda text: sub_url(text),
@@ -83,6 +190,10 @@ def full_proc(text: str) -> str:
 def cosine_sim(x: np.array, y: np.array) -> np.array:
     """Compute a cosine similarity between `x` and `y` vectors: `cos(x, y) = x @ y / (||x|| * ||y||)`
 
+    Example:
+        >>> cosine_sim(np.array([1.0, 1.0, 1.0, 1.0]), np.array([0.5, -3.0, 0.25, -1.0]))
+        -0.5060243137049899
+
     Args:
         x (np.array): An input vector.
         y (np.array): Another input vector.
@@ -91,7 +202,7 @@ def cosine_sim(x: np.array, y: np.array) -> np.array:
         np.array: Cosine similarity vector.
     """
 
-    return x @ y / (norm(x) * norm(y))
+    return x @ y / (la.norm(x) * la.norm(y))
 
 # Preprocessing UDFs
 strip_udf = udf(lambda text: text.strip(), StringType())
